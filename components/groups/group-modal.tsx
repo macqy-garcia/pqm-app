@@ -25,11 +25,12 @@ interface GroupModalProps {
 }
 
 export function GroupModal({ open, onOpenChange }: GroupModalProps) {
-  const { registeredPlayers, groups, settings, createGroup } = useStore();
+  const { registeredPlayers, groups, createGroup } = useStore();
   const [groupName, setGroupName] = useState('');
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
 
-  const playersNeeded = PLAYERS_PER_GAME[settings.gameMode];
+  const MIN_GROUP_SIZE = 2;
+  const MAX_GROUP_SIZE = 4;
   const players = Object.keys(registeredPlayers);
 
   // Get players already in groups
@@ -47,10 +48,10 @@ export function GroupModal({ open, onOpenChange }: GroupModalProps) {
     if (newSelected.has(playerName)) {
       newSelected.delete(playerName);
     } else {
-      if (newSelected.size < playersNeeded) {
+      if (newSelected.size < MAX_GROUP_SIZE) {
         newSelected.add(playerName);
       } else {
-        toast.error(`Group can only have ${playersNeeded} players for ${settings.gameMode} mode`);
+        toast.error(`Group can only have up to ${MAX_GROUP_SIZE} players`);
       }
     }
     setSelectedPlayers(newSelected);
@@ -62,8 +63,13 @@ export function GroupModal({ open, onOpenChange }: GroupModalProps) {
       return;
     }
 
-    if (selectedPlayers.size !== playersNeeded) {
-      toast.error(`Group must have exactly ${playersNeeded} players for ${settings.gameMode} mode`);
+    if (selectedPlayers.size < MIN_GROUP_SIZE) {
+      toast.error(`Group must have at least ${MIN_GROUP_SIZE} players`);
+      return;
+    }
+
+    if (selectedPlayers.size > MAX_GROUP_SIZE) {
+      toast.error(`Group can have at most ${MAX_GROUP_SIZE} players`);
       return;
     }
 
@@ -101,7 +107,8 @@ export function GroupModal({ open, onOpenChange }: GroupModalProps) {
         <DialogHeader>
           <DialogTitle>Create Group</DialogTitle>
           <DialogDescription>
-            Create a group to queue players together for {settings.gameMode} mode.
+            Create a group of 2-4 players. If the group is smaller than needed for a game,
+            individual players from the queue will fill the remaining spots.
           </DialogDescription>
         </DialogHeader>
 
@@ -120,7 +127,7 @@ export function GroupModal({ open, onOpenChange }: GroupModalProps) {
           {/* Player Selection */}
           <div className="space-y-2">
             <Label>
-              Select Players ({selectedPlayers.size}/{playersNeeded} for {settings.gameMode})
+              Select Players ({selectedPlayers.size} selected, {MIN_GROUP_SIZE}-{MAX_GROUP_SIZE} allowed)
             </Label>
 
             <ScrollArea className="h-[300px] border rounded-md p-3">
@@ -168,7 +175,11 @@ export function GroupModal({ open, onOpenChange }: GroupModalProps) {
           </Button>
           <Button
             onClick={handleCreate}
-            disabled={!groupName.trim() || selectedPlayers.size !== playersNeeded}
+            disabled={
+              !groupName.trim() ||
+              selectedPlayers.size < MIN_GROUP_SIZE ||
+              selectedPlayers.size > MAX_GROUP_SIZE
+            }
           >
             Create Group
           </Button>

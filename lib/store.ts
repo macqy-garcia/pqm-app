@@ -112,17 +112,47 @@ export const useStore = create<StoreState>()(
 
         // Check if first item in queue is a group
         const firstItem = queue[0];
-        let players: string[];
-        let itemsToRemove: number;
+        let players: string[] = [];
+        let itemsToRemove = 0;
 
         let groupInfo: { id: number; name: string } | undefined;
 
         if (firstItem && firstItem.type === 'group') {
-          // It's a group - extract player names and store group info
-          if (firstItem.players.length !== playersNeeded) return;
-          players = firstItem.players;
-          itemsToRemove = 1; // Remove the group
-          groupInfo = { id: firstItem.id, name: firstItem.name };
+          // It's a group
+          const groupSize = firstItem.players.length;
+
+          if (groupSize === playersNeeded) {
+            // Full group - take all players
+            players = firstItem.players;
+            itemsToRemove = 1;
+            groupInfo = { id: firstItem.id, name: firstItem.name };
+          } else if (groupSize < playersNeeded) {
+            // Partial group - fill remaining spots with individual players
+            players = [...firstItem.players];
+            const spotsNeeded = playersNeeded - groupSize;
+
+            // Look for individual players after the group
+            let individualsFound = 0;
+            for (let i = 1; i < queue.length && individualsFound < spotsNeeded; i++) {
+              const item = queue[i];
+              if (item.type === 'player') {
+                players.push(item.name);
+                individualsFound++;
+              } else {
+                // Hit another group, stop
+                break;
+              }
+            }
+
+            // Check if we have enough total players
+            if (players.length < playersNeeded) return;
+
+            itemsToRemove = 1 + individualsFound; // Remove group + individual players
+            groupInfo = { id: firstItem.id, name: firstItem.name };
+          } else {
+            // Group has more players than needed (shouldn't happen but handle it)
+            return;
+          }
         } else {
           // Get individual players
           const individualPlayers: string[] = [];
@@ -328,10 +358,10 @@ export const useStore = create<StoreState>()(
         const trimmedName = name.trim();
         if (!trimmedName) return false;
 
-        const { groups, settings } = get();
-        const playersNeeded = settings.gameMode === 'doubles' ? 4 : 2;
+        const { groups } = get();
 
-        if (players.length !== playersNeeded) return false;
+        // Groups must have 2-4 players
+        if (players.length < 2 || players.length > 4) return false;
 
         // Check if any player is already in a group
         const playersInGroups = groups.flatMap((g) => g.players);

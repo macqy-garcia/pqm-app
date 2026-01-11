@@ -24,7 +24,7 @@ interface GroupCardProps {
 }
 
 export function GroupCard({ group }: GroupCardProps) {
-  const { queue, courts, addGroupToQueue, deleteGroup } = useStore();
+  const { queue, courts, addGroupToQueue, deleteGroup, settings } = useStore();
 
   const isInQueue = queue.some(
     (item) => typeof item === 'object' && item.type === 'group' && item.id === group.id
@@ -36,6 +36,10 @@ export function GroupCard({ group }: GroupCardProps) {
   );
 
   const isPlaying = !!playingCourt;
+
+  // Determine if this is a partial group
+  const playersNeeded = settings.gameMode === 'doubles' ? 4 : 2;
+  const isPartialGroup = group.players.length < playersNeeded;
 
   const handleAddToQueue = () => {
     const success = addGroupToQueue(group.id);
@@ -62,8 +66,11 @@ export function GroupCard({ group }: GroupCardProps) {
       <div className="space-y-3">
         {/* Header */}
         <div>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <h4 className="font-semibold text-base">{group.name}</h4>
+            <Badge variant="outline" className="text-xs">
+              {group.players.length} player{group.players.length !== 1 ? 's' : ''}
+            </Badge>
             {isPlaying && (
               <Badge variant="default" className="text-xs bg-green-600">
                 Playing on Court {playingCourt?.id}
@@ -72,6 +79,11 @@ export function GroupCard({ group }: GroupCardProps) {
             {isInQueue && !isPlaying && (
               <Badge variant="default" className="text-xs">
                 In Queue
+              </Badge>
+            )}
+            {isPartialGroup && !isPlaying && !isInQueue && (
+              <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400">
+                Needs +{playersNeeded - group.players.length}
               </Badge>
             )}
           </div>
@@ -89,6 +101,13 @@ export function GroupCard({ group }: GroupCardProps) {
             </Badge>
           ))}
         </div>
+
+        {/* Info message for partial groups */}
+        {isPartialGroup && (
+          <p className="text-xs text-muted-foreground">
+            This group needs {playersNeeded - group.players.length} more player{playersNeeded - group.players.length !== 1 ? 's' : ''} from the queue to start a game.
+          </p>
+        )}
 
         {/* Actions */}
         <div className="flex gap-2 pt-2">

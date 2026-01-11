@@ -95,7 +95,7 @@ function SortableQueueItem({ item, index, onRemove, colorIndex, registeredPlayer
     transform,
     transition,
     isDragging,
-  } = useSortable({ id, disabled: isGroup });
+  } = useSortable({ id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -109,10 +109,14 @@ function SortableQueueItem({ item, index, onRemove, colorIndex, registeredPlayer
       <div
         ref={setNodeRef}
         style={style}
+        {...attributes}
+        {...listeners}
         className={cn(
-          "flex items-center justify-between p-3 sm:p-4 rounded-lg border-2",
+          "flex items-center justify-between p-3 sm:p-4 rounded-lg border-2 transition-all cursor-move touch-manipulation active:scale-[0.98]",
           colors.bg,
-          colors.border
+          colors.border,
+          isDragging && 'opacity-50 scale-95',
+          !isDragging && 'hover:opacity-90'
         )}
       >
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
@@ -146,7 +150,10 @@ function SortableQueueItem({ item, index, onRemove, colorIndex, registeredPlayer
         <Button
           variant="ghost"
           size="sm"
-          onClick={onRemove}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
           className="text-destructive hover:text-destructive hover:bg-destructive/10 h-10 w-10 p-0 flex-shrink-0"
         >
           <X className="h-5 w-5" />
@@ -206,7 +213,10 @@ function SortableQueueItem({ item, index, onRemove, colorIndex, registeredPlayer
       <Button
         variant="ghost"
         size="sm"
-        onClick={onRemove}
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove();
+        }}
         className="text-destructive hover:text-destructive hover:bg-destructive/10 h-10 w-10 p-0 flex-shrink-0"
       >
         <X className="h-5 w-5" />

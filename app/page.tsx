@@ -209,7 +209,7 @@ export default function Home() {
             </Badge>
           </div>
           {/* <pre>{JSON.stringify(courts, null, 2)}</pre> */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 items-start">
             {courts.map((court) => (
               <CourtCard
                 key={court.id}

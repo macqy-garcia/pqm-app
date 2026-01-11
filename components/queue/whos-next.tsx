@@ -24,8 +24,38 @@ export function WhosNext() {
 
     // If first item is a group
     if (firstItem.type === 'group') {
-      if (firstItem.players.length === playersNeeded) {
-        return { type: 'group' as const, data: firstItem };
+      const groupSize = firstItem.players.length;
+
+      if (groupSize === playersNeeded) {
+        // Full group
+        return { type: 'group' as const, data: firstItem, isPartial: false };
+      } else if (groupSize < playersNeeded) {
+        // Partial group - need to fill with individual players
+        const players = [...firstItem.players];
+        const spotsNeeded = playersNeeded - groupSize;
+
+        // Look for individual players after the group
+        let individualsFound = 0;
+        for (let i = 1; i < queue.length && individualsFound < spotsNeeded; i++) {
+          const item = queue[i];
+          if (item.type === 'player') {
+            players.push(item.name);
+            individualsFound++;
+          } else {
+            // Hit another group, stop
+            break;
+          }
+        }
+
+        // Check if we have enough total players
+        if (players.length < playersNeeded) return null;
+
+        return {
+          type: 'partial-group' as const,
+          groupData: firstItem,
+          allPlayers: players,
+          addedFromQueue: individualsFound
+        };
       }
       return null;
     }
@@ -78,6 +108,34 @@ export function WhosNext() {
               <div className={cn("font-medium text-sm truncate", NEXT_GAME_COLOR.text)}>{nextPlayers.data.name}</div>
               <div className={cn("text-xs truncate opacity-75", NEXT_GAME_COLOR.text)}>
                 {nextPlayers.data.players.join(', ')}
+              </div>
+            </div>
+          </div>
+        ) : nextPlayers.type === 'partial-group' ? (
+          <div className="space-y-2">
+            {/* Group header */}
+            <div className={cn(
+              "flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-md border-2",
+              NEXT_GAME_COLOR.bg,
+              NEXT_GAME_COLOR.border
+            )}>
+              <div className={cn(
+                "flex items-center justify-center w-8 h-8 sm:w-7 sm:h-7 rounded-full text-sm font-semibold flex-shrink-0",
+                NEXT_GAME_COLOR.badge,
+                NEXT_GAME_COLOR.text
+              )}>
+                👥
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className={cn("font-medium text-sm truncate", NEXT_GAME_COLOR.text)}>
+                  {nextPlayers.groupData.name}
+                  <span className="opacity-75 ml-1 text-xs">
+                    + {nextPlayers.addedFromQueue} from queue
+                  </span>
+                </div>
+                <div className={cn("text-xs truncate opacity-75", NEXT_GAME_COLOR.text)}>
+                  {nextPlayers.allPlayers.join(', ')}
+                </div>
               </div>
             </div>
           </div>
