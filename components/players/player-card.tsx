@@ -18,10 +18,10 @@ interface PlayerCardProps {
 }
 
 const skillColors: Record<SkillLevel, string> = {
-  beginner: 'bg-green-500/15 text-green-600 border-green-500/30',
-  intermediate: 'bg-blue-500/15 text-blue-600 border-blue-500/30',
-  advanced: 'bg-orange-500/15 text-orange-600 border-orange-500/30',
-  professional: 'bg-red-500/15 text-red-600 border-red-500/30',
+  beginner: 'bg-green-500/20 text-green-700 dark:text-green-400 border-green-500/50 font-medium',
+  intermediate: 'bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-500/50 font-medium',
+  advanced: 'bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-500/50 font-medium',
+  professional: 'bg-purple-500/20 text-purple-700 dark:text-purple-400 border-purple-500/50 font-medium',
 };
 
 export function PlayerCard({
@@ -56,12 +56,12 @@ export function PlayerCard({
   return (
     <Card
       className={cn(
-        'p-3 transition-all',
-        isPlaying && 'border-primary/50 bg-primary/5',
-        isInQueue && !isPlaying && 'border-muted-foreground/30 bg-muted'
+        'p-4 transition-all hover:shadow-md',
+        isPlaying && 'border-blue-500/50 bg-blue-500/5 shadow-sm',
+        isInQueue && !isPlaying && 'border-orange-500/50 bg-orange-500/5 shadow-sm'
       )}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         {/* Checkbox */}
         <Checkbox
           checked={checked}
@@ -72,12 +72,22 @@ export function PlayerCard({
         {/* Avatar */}
         <Avatar
           className={cn(
-            'h-10 w-10 flex-shrink-0',
-            isPlaying && 'bg-primary text-primary-foreground',
-            isInQueue && !isPlaying && 'bg-muted-foreground/20'
+            'h-12 w-12 flex-shrink-0 border-2 font-semibold text-sm',
+            isPlaying && 'bg-gradient-to-br from-blue-500 to-blue-700 text-white border-blue-600',
+            isInQueue && !isPlaying && 'bg-gradient-to-br from-orange-500 to-orange-700 text-white border-orange-600',
+            !isPlaying && !isInQueue && 'bg-gradient-to-br from-gray-500 to-gray-700 dark:from-gray-600 dark:to-gray-800 text-white border-gray-600'
           )}
         >
-          <AvatarFallback>{getInitials(playerName)}</AvatarFallback>
+          <AvatarFallback
+            className={cn(
+              'font-semibold',
+              isPlaying && 'bg-gradient-to-br from-blue-500 to-blue-700 text-white',
+              isInQueue && !isPlaying && 'bg-gradient-to-br from-orange-500 to-orange-700 text-white',
+              !isPlaying && !isInQueue && 'bg-gradient-to-br from-gray-500 to-gray-700 dark:from-gray-600 dark:to-gray-800 text-white'
+            )}
+          >
+            {getInitials(playerName)}
+          </AvatarFallback>
         </Avatar>
 
         {/* Player Info */}

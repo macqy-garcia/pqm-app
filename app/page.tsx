@@ -99,11 +99,23 @@ export default function Home() {
         <header className="flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
-              🎾 <span className="truncate">Pickleball Queue Manager</span>
+              <span className="truncate">Pickleball Queue Manager</span>
             </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1 hidden sm:block">
-              Manage courts, queues, and players efficiently
-            </p>
+            <div className="flex items-center gap-3 mt-2 text-xs sm:text-sm text-muted-foreground flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium text-foreground">{activeCourtsCount}/{courts.length}</span>
+                <span>courts active</span>
+              </div>
+              <span className="text-muted-foreground/40">•</span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium text-foreground">{queue.length}</span>
+                <span>in queue</span>
+              </div>
+              <span className="text-muted-foreground/40">•</span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium text-foreground capitalize">{settings.gameMode}</span>
+              </div>
+            </div>
           </div>
           <Button
             variant="outline"
