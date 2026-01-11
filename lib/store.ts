@@ -156,19 +156,49 @@ export const useStore = create<StoreState>()(
         } else {
           // Get individual players
           const individualPlayers: string[] = [];
+          let hitGroupIndex = -1;
+
           for (let i = 0; i < queue.length && individualPlayers.length < playersNeeded; i++) {
             const item = queue[i];
             if (item.type === 'player') {
               individualPlayers.push(item.name);
             } else {
-              break; // Hit a group, stop
+              // Hit a group, stop collecting individuals
+              hitGroupIndex = i;
+              break;
             }
           }
 
-          if (individualPlayers.length < playersNeeded) return;
-          players = individualPlayers;
-          itemsToRemove = playersNeeded;
-          groupInfo = undefined;
+          // Check if we have enough individual players
+          if (individualPlayers.length >= playersNeeded) {
+            // We have enough individuals, take exactly what we need
+            players = individualPlayers.slice(0, playersNeeded);
+            itemsToRemove = playersNeeded;
+            groupInfo = undefined;
+          } else if (hitGroupIndex >= 0 && hitGroupIndex < queue.length) {
+            // We hit a group before getting enough players
+            // Check if we can combine individuals + group for an exact match
+            const group = queue[hitGroupIndex];
+
+            if (group.type === 'group') {
+              const totalPlayers = individualPlayers.length + group.players.length;
+
+              if (totalPlayers === playersNeeded) {
+                // Perfect match! Combine all individuals before group + entire group
+                players = [...individualPlayers, ...group.players];
+                itemsToRemove = hitGroupIndex + 1; // Remove all individuals + the group
+                groupInfo = { id: group.id, name: group.name };
+              } else {
+                // Can't make an exact match, need to wait for more players or reorder
+                return;
+              }
+            } else {
+              return; // Not enough players
+            }
+          } else {
+            // No group found, just not enough individual players
+            return;
+          }
         }
 
         court.players = players;

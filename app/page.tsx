@@ -50,26 +50,6 @@ export default function Home() {
     initializeCourts();
   }, [initializeCourts]);
 
-  // Handle QR code join action
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('action') === 'join') {
-        // Clear the URL parameter
-        window.history.replaceState({}, document.title, window.location.pathname);
-
-        // Prompt for player name
-        const name = prompt('Enter your name to join the queue:');
-        if (name && name.trim()) {
-          const success = addPlayerToQueue(name.trim());
-          if (success) {
-            toast.success(`${name.trim()} added to queue!`);
-          }
-        }
-      }
-    }
-  }, [addPlayerToQueue]);
-
   const handleAddPlayer = () => {
     if (playerName.trim()) {
       const success = addPlayerToQueue(playerName.trim());

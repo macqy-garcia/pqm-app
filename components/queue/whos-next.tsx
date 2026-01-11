@@ -62,18 +62,43 @@ export function WhosNext() {
 
     // Get individual players
     const individualPlayers: string[] = [];
+    let hitGroupIndex = -1;
+
     for (let i = 0; i < queue.length && individualPlayers.length < playersNeeded; i++) {
       const item = queue[i];
       if (item.type === 'player') {
         individualPlayers.push(item.name);
       } else {
-        break; // Hit a group, stop
+        // Hit a group, stop collecting individuals
+        hitGroupIndex = i;
+        break;
       }
     }
 
-    if (individualPlayers.length < playersNeeded) return null;
+    // Check if we have enough individual players
+    if (individualPlayers.length >= playersNeeded) {
+      return { type: 'individual' as const, data: individualPlayers.slice(0, playersNeeded) };
+    } else if (hitGroupIndex >= 0 && hitGroupIndex < queue.length) {
+      // We hit a group - check if we can combine for exact match
+      const group = queue[hitGroupIndex];
 
-    return { type: 'individual' as const, data: individualPlayers };
+      if (group.type === 'group') {
+        const totalPlayers = individualPlayers.length + group.players.length;
+
+        if (totalPlayers === playersNeeded) {
+          // Perfect match! Show combination
+          return {
+            type: 'mixed' as const,
+            individuals: individualPlayers,
+            groupData: group,
+            allPlayers: [...individualPlayers, ...group.players]
+          };
+        }
+      }
+    }
+
+    // Not enough players to start
+    return null;
   };
 
   const nextPlayers = getNextPlayers();
@@ -132,6 +157,31 @@ export function WhosNext() {
                   <span className="opacity-75 ml-1 text-xs">
                     + {nextPlayers.addedFromQueue} from queue
                   </span>
+                </div>
+                <div className={cn("text-xs truncate opacity-75", NEXT_GAME_COLOR.text)}>
+                  {nextPlayers.allPlayers.join(', ')}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : nextPlayers.type === 'mixed' ? (
+          <div className="space-y-2">
+            {/* Mixed: Individuals + Group */}
+            <div className={cn(
+              "flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-md border-2",
+              NEXT_GAME_COLOR.bg,
+              NEXT_GAME_COLOR.border
+            )}>
+              <div className={cn(
+                "flex items-center justify-center w-8 h-8 sm:w-7 sm:h-7 rounded-full text-sm font-semibold flex-shrink-0",
+                NEXT_GAME_COLOR.badge,
+                NEXT_GAME_COLOR.text
+              )}>
+                🔀
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className={cn("font-medium text-sm", NEXT_GAME_COLOR.text)}>
+                  {nextPlayers.individuals.length} Individual{nextPlayers.individuals.length !== 1 ? 's' : ''} + {nextPlayers.groupData.name}
                 </div>
                 <div className={cn("text-xs truncate opacity-75", NEXT_GAME_COLOR.text)}>
                   {nextPlayers.allPlayers.join(', ')}
