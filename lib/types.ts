@@ -64,6 +64,8 @@ export interface Settings {
   skillMatchingEnabled: boolean;
   showCourtTimers: boolean;
   enableManualScoring: boolean;
+  autoTeamBalancing: boolean; // Automatically balance teams by skill when starting games
+  strictSkillMatching: boolean; // Only allow games with players of the same skill level
 }
 
 export interface CourtSchedule {

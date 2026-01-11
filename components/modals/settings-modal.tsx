@@ -53,6 +53,8 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [skillMatchingEnabled, setSkillMatchingEnabled] = useState(
     settings.skillMatchingEnabled
   );
+  const [autoTeamBalancing, setAutoTeamBalancing] = useState(settings.autoTeamBalancing);
+  const [strictSkillMatching, setStrictSkillMatching] = useState(settings.strictSkillMatching);
   const [showCourtTimers, setShowCourtTimers] = useState(settings.showCourtTimers);
   const [enableManualScoring, setEnableManualScoring] = useState(settings.enableManualScoring);
 
@@ -65,6 +67,8 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       setAutoTimer(settings.autoTimer);
       setEnableNotifications(settings.enableNotifications);
       setSkillMatchingEnabled(settings.skillMatchingEnabled);
+      setAutoTeamBalancing(settings.autoTeamBalancing);
+      setStrictSkillMatching(settings.strictSkillMatching);
       setShowCourtTimers(settings.showCourtTimers);
       setEnableManualScoring(settings.enableManualScoring);
     }
@@ -92,6 +96,8 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       autoTimer,
       enableNotifications,
       skillMatchingEnabled,
+      autoTeamBalancing,
+      strictSkillMatching,
       showCourtTimers,
       enableManualScoring,
     });
@@ -214,6 +220,39 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               </div>
               <p className="text-xs text-muted-foreground">
                 Shows match quality indicators and allows queue optimization by skill level
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="autoTeamBalancing" className="flex-1 cursor-pointer">
+                  Auto-balance teams by skill
+                </Label>
+                <Switch
+                  id="autoTeamBalancing"
+                  checked={autoTeamBalancing}
+                  onCheckedChange={setAutoTeamBalancing}
+                  disabled={!skillMatchingEnabled}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Automatically creates balanced teams when starting games. Players are paired to create fair matchups. Requires skill-based matching to be enabled.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="strictSkillMatching" className="flex-1 cursor-pointer">
+                  Strict skill level matching
+                </Label>
+                <Switch
+                  id="strictSkillMatching"
+                  checked={strictSkillMatching}
+                  onCheckedChange={setStrictSkillMatching}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Only allow games where all players have the same skill level (e.g., all beginners, all intermediates). When enabled, games won't start unless all players match.
               </p>
             </div>
 

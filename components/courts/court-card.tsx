@@ -233,22 +233,65 @@ export function CourtCard({ court, onScheduleClick }: CourtCardProps) {
 
               {/* Players */}
               <div className="space-y-2 mb-3 sm:mb-4">
-                {court.groupInfo ? (
-                  // Display as a group
-                  <div className="flex items-center gap-2 bg-muted px-3 py-2.5 rounded-md text-sm">
+                {court.groupInfo && (
+                  // Display group name if players came from a group
+                  <div className="flex items-center gap-2 bg-muted px-3 py-2.5 rounded-md text-sm mb-2">
                     <span>👥</span>
                     <span className="font-medium">{court.groupInfo.name}</span>
                   </div>
-                ) : null}
-                {court.players.map((player, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-2 bg-muted px-3 py-2.5 rounded-md text-sm"
-                  >
-                    <span>👤</span>
-                    <span>{player}</span>
+                )}
+
+                {/* Team-based player grouping (for manual scoring mode) */}
+                {settings.enableManualScoring && settings.gameMode === 'doubles' && court.players.length === 4 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Team 1 */}
+                    <div className="space-y-2">
+                      <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 px-2">
+                        Team 1
+                      </div>
+                      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md p-2 space-y-1">
+                        {court.players.slice(0, 2).map((player, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center gap-2 px-2 py-1.5 text-sm"
+                          >
+                            <span>👤</span>
+                            <span>{player}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Team 2 */}
+                    <div className="space-y-2">
+                      <div className="text-xs font-semibold text-green-600 dark:text-green-400 px-2">
+                        Team 2
+                      </div>
+                      <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-md p-2 space-y-1">
+                        {court.players.slice(2, 4).map((player, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center gap-2 px-2 py-1.5 text-sm"
+                          >
+                            <span>👤</span>
+                            <span>{player}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                ))}
+                ) : (
+                  // Default list view (for singles or when manual scoring is off)
+                  court.players.map((player, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-2 bg-muted px-3 py-2.5 rounded-md text-sm"
+                    >
+                      <span>👤</span>
+                      <span>{player}</span>
+                    </div>
+                  ))
+                )}
               </div>
 
               {/* End Game Button */}

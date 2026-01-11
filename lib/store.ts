@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AppState, Court, QueueItem, Player, Group, GameRecord, Settings, CourtSchedule, SkillLevel } from './types';
+import { balanceDoublesTeams, balanceSinglesTeams } from './team-balancing';
 
 interface StoreState extends AppState {
   // Court actions
@@ -54,6 +55,8 @@ const defaultSettings: Settings = {
   skillMatchingEnabled: false,
   showCourtTimers: true,
   enableManualScoring: false,
+  autoTeamBalancing: false,
+  strictSkillMatching: false,
 };
 
 export const useStore = create<StoreState>()(
@@ -201,7 +204,46 @@ export const useStore = create<StoreState>()(
           }
         }
 
-        court.players = players;
+        // Check for strict skill matching if enabled
+        if (settings.strictSkillMatching) {
+          const { registeredPlayers } = get();
+
+          // Get skill levels for all players
+          const skillLevels = players.map((name) => {
+            const player = registeredPlayers[name];
+            return player ? player.skillLevel : 'intermediate';
+          });
+
+          // Check if all skill levels are the same
+          const firstSkillLevel = skillLevels[0];
+          const allSameSkill = skillLevels.every((skill) => skill === firstSkillLevel);
+
+          if (!allSameSkill) {
+            // Cannot start game - skill levels don't match
+            return;
+          }
+        }
+
+        // Apply team balancing if enabled
+        let finalPlayers = players;
+        if (settings.autoTeamBalancing && settings.skillMatchingEnabled) {
+          const { registeredPlayers } = get();
+
+          if (settings.gameMode === 'doubles' && players.length === 4) {
+            const balanced = balanceDoublesTeams(players, registeredPlayers);
+            if (balanced) {
+              // Reorder players: team1[0], team1[1], team2[0], team2[1]
+              finalPlayers = [...balanced.team1, ...balanced.team2];
+            }
+          } else if (settings.gameMode === 'singles' && players.length === 2) {
+            const balanced = balanceSinglesTeams(players);
+            if (balanced) {
+              finalPlayers = [...balanced.team1, ...balanced.team2];
+            }
+          }
+        }
+
+        court.players = finalPlayers;
         court.active = true;
         court.startTime = Date.now();
         court.groupInfo = groupInfo;
