@@ -20,6 +20,7 @@ export interface Court {
   groupInfo?: { id: number; name: string }; // Track if players came from a group
   team1Score: number;
   team2Score: number;
+  assignedSkillLevel?: SkillLevel; // Optional skill level restriction for this court
 }
 
 export interface Group {
@@ -66,6 +67,7 @@ export interface Settings {
   enableManualScoring: boolean;
   autoTeamBalancing: boolean; // Automatically balance teams by skill when starting games
   strictSkillMatching: boolean; // Only allow games with players of the same skill level
+  enableCourtSkillAssignment: boolean; // Allow assigning skill levels to specific courts
 }
 
 export interface CourtSchedule {

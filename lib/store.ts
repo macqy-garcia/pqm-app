@@ -10,6 +10,7 @@ interface StoreState extends AppState {
   endGame: (courtId: number) => void;
   addPlayerToCourt: (courtId: number, playerName: string) => void;
   updateCourtScore: (courtId: number, team: 'team1' | 'team2', score: number) => void;
+  assignCourtSkillLevel: (courtId: number, skillLevel: SkillLevel | null) => void;
 
   // Queue actions
   addPlayerToQueue: (name: string) => boolean;
@@ -57,6 +58,7 @@ const defaultSettings: Settings = {
   enableManualScoring: false,
   autoTeamBalancing: false,
   strictSkillMatching: false,
+  enableCourtSkillAssignment: false,
 };
 
 export const useStore = create<StoreState>()(
@@ -112,6 +114,45 @@ export const useStore = create<StoreState>()(
         }
 
         const playersNeeded = settings.gameMode === 'doubles' ? 4 : 2;
+
+        // Check if court has skill level assignment and filter queue accordingly
+        if (settings.enableCourtSkillAssignment && court.assignedSkillLevel) {
+          const { registeredPlayers } = get();
+          const courtSkillLevel = court.assignedSkillLevel;
+
+          // Check if next players in queue match the court's skill level
+          const firstItem = queue[0];
+          if (!firstItem) return;
+
+          // Gather player names from the front of the queue
+          let playerNamesToCheck: string[] = [];
+
+          if (firstItem.type === 'group') {
+            playerNamesToCheck = firstItem.players;
+          } else {
+            // Get individual players
+            for (let i = 0; i < queue.length && playerNamesToCheck.length < playersNeeded; i++) {
+              const item = queue[i];
+              if (item.type === 'player') {
+                playerNamesToCheck.push(item.name);
+              } else {
+                break;
+              }
+            }
+          }
+
+          // Check if all players match the court's skill level
+          const allPlayersMatchCourtSkill = playerNamesToCheck.every((name) => {
+            const player = registeredPlayers[name];
+            const playerSkillLevel = player ? player.skillLevel : 'intermediate';
+            return playerSkillLevel === courtSkillLevel;
+          });
+
+          if (!allPlayersMatchCourtSkill) {
+            // Cannot start game on this court - skill levels don't match
+            return;
+          }
+        }
 
         // Check if first item in queue is a group
         const firstItem = queue[0];
@@ -628,6 +669,19 @@ export const useStore = create<StoreState>()(
           court.team1Score = score;
         } else {
           court.team2Score = score;
+        }
+        set({ courts: [...courts] });
+      },
+
+      assignCourtSkillLevel: (courtId: number, skillLevel: SkillLevel | null) => {
+        const { courts } = get();
+        const court = courts.find((c) => c.id === courtId);
+        if (!court) return;
+
+        if (skillLevel === null) {
+          delete court.assignedSkillLevel;
+        } else {
+          court.assignedSkillLevel = skillLevel;
         }
         set({ courts: [...courts] });
       },

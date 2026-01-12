@@ -55,6 +55,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   );
   const [autoTeamBalancing, setAutoTeamBalancing] = useState(settings.autoTeamBalancing);
   const [strictSkillMatching, setStrictSkillMatching] = useState(settings.strictSkillMatching);
+  const [enableCourtSkillAssignment, setEnableCourtSkillAssignment] = useState(settings.enableCourtSkillAssignment);
   const [showCourtTimers, setShowCourtTimers] = useState(settings.showCourtTimers);
   const [enableManualScoring, setEnableManualScoring] = useState(settings.enableManualScoring);
 
@@ -69,6 +70,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       setSkillMatchingEnabled(settings.skillMatchingEnabled);
       setAutoTeamBalancing(settings.autoTeamBalancing);
       setStrictSkillMatching(settings.strictSkillMatching);
+      setEnableCourtSkillAssignment(settings.enableCourtSkillAssignment);
       setShowCourtTimers(settings.showCourtTimers);
       setEnableManualScoring(settings.enableManualScoring);
     }
@@ -98,6 +100,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       skillMatchingEnabled,
       autoTeamBalancing,
       strictSkillMatching,
+      enableCourtSkillAssignment,
       showCourtTimers,
       enableManualScoring,
     });
@@ -253,6 +256,22 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               </div>
               <p className="text-xs text-muted-foreground">
                 Only allow games where all players have the same skill level (e.g., all beginners, all intermediates). When enabled, games won't start unless all players match.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="enableCourtSkillAssignment" className="flex-1 cursor-pointer">
+                  Enable court skill assignments
+                </Label>
+                <Switch
+                  id="enableCourtSkillAssignment"
+                  checked={enableCourtSkillAssignment}
+                  onCheckedChange={setEnableCourtSkillAssignment}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Assign specific skill levels to courts (e.g., Court 1-2 for beginners, Court 3 for advanced). Only players matching the court's skill level can play on that court.
               </p>
             </div>
 

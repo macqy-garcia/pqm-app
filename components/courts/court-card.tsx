@@ -5,8 +5,10 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Clock, Play, Pause, RotateCcw, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { useStore } from '@/lib/store';
-import type { Court } from '@/lib/types';
+import type { Court, SkillLevel } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 interface CourtCardProps {
@@ -15,7 +17,7 @@ interface CourtCardProps {
 }
 
 export function CourtCard({ court, onScheduleClick }: CourtCardProps) {
-  const { endGame, isCourtAvailable, courtSchedules, settings, updateCourtScore } = useStore();
+  const { endGame, isCourtAvailable, courtSchedules, settings, updateCourtScore, assignCourtSkillLevel } = useStore();
   const [elapsed, setElapsed] = useState(0);
   const [isExpanded, setIsExpanded] = useState(true);
   const isScheduled = !isCourtAvailable(court.id);
@@ -73,7 +75,7 @@ export function CourtCard({ court, onScheduleClick }: CourtCardProps) {
         "flex items-center justify-between transition-all duration-200",
         isExpanded ? "mb-3 sm:mb-4" : "mb-0"
       )}>
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="flex items-center gap-3 flex-1 min-w-0 flex-wrap">
           <h3 className="text-base sm:text-lg font-semibold">Court {court.id}</h3>
           <Badge
             variant={court.active ? 'default' : isScheduled ? 'secondary' : 'outline'}
@@ -81,6 +83,15 @@ export function CourtCard({ court, onScheduleClick }: CourtCardProps) {
           >
             {court.active ? 'Playing' : isScheduled ? 'Scheduled' : 'Empty'}
           </Badge>
+          {/* Skill Level Badge */}
+          {settings.enableCourtSkillAssignment && court.assignedSkillLevel && (
+            <Badge
+              variant="outline"
+              className="text-xs px-2 py-0.5 bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700"
+            >
+              {court.assignedSkillLevel.charAt(0).toUpperCase() + court.assignedSkillLevel.slice(1)} Only
+            </Badge>
+          )}
           {/* Collapsed preview */}
           {!isExpanded && court.active && (
             <span className="text-sm text-muted-foreground truncate">
@@ -314,6 +325,38 @@ export function CourtCard({ court, onScheduleClick }: CourtCardProps) {
                 <p className="text-center text-muted-foreground py-6 sm:py-8 text-sm">
                   Court available
                 </p>
+
+                {/* Court Skill Assignment */}
+                {settings.enableCourtSkillAssignment && (
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium">Assign Skill Level (Optional)</Label>
+                    <Select
+                      value={court.assignedSkillLevel || 'none'}
+                      onValueChange={(value) => {
+                        if (value === 'none') {
+                          assignCourtSkillLevel(court.id, null);
+                        } else {
+                          assignCourtSkillLevel(court.id, value as SkillLevel);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Any skill level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Any skill level</SelectItem>
+                        <SelectItem value="beginner">Beginner Only</SelectItem>
+                        <SelectItem value="intermediate">Intermediate Only</SelectItem>
+                        <SelectItem value="advanced">Advanced Only</SelectItem>
+                        <SelectItem value="professional">Professional Only</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Only players with this skill level can play on this court
+                    </p>
+                  </div>
+                )}
+
                 <Button
                   variant="secondary"
                   size="sm"
