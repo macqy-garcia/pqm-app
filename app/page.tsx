@@ -29,6 +29,7 @@ export default function Home() {
     queue,
     groups,
     settings,
+    registeredPlayers,
     initializeCourts,
     addPlayerToQueue,
     startGame,
@@ -63,19 +64,83 @@ export default function Home() {
   };
 
   const handleStartNextGame = () => {
-    // Find court that is not active AND not scheduled
-    const availableCourt = courts.find((c) => !c.active && isCourtAvailable(c.id));
-    if (!availableCourt) {
-      toast.error('No courts available (all courts are in use or scheduled)');
-      return;
-    }
-
     const playersNeeded = PLAYERS_PER_GAME[settings.gameMode];
+
     if (queue.length < playersNeeded) {
       toast.error(`Need ${playersNeeded} players to start a game`);
       return;
     }
 
+    // Get all available courts (not active and not scheduled)
+    const availableCourts = courts.filter((c) => !c.active && isCourtAvailable(c.id));
+
+    if (availableCourts.length === 0) {
+      toast.error('No courts available (all courts are in use or scheduled)');
+      return;
+    }
+
+    // If court skill assignment is enabled, find the best matching court
+    if (settings.enableCourtSkillAssignment) {
+      // Determine the skill levels of the next players in queue
+      const firstItem = queue[0];
+      let nextPlayerNames: string[] = [];
+
+      if (firstItem.type === 'group') {
+        nextPlayerNames = firstItem.players.slice(0, playersNeeded);
+      } else {
+        // Collect individual player names
+        for (let i = 0; i < queue.length && nextPlayerNames.length < playersNeeded; i++) {
+          const item = queue[i];
+          if (item.type === 'player') {
+            nextPlayerNames.push(item.name);
+          } else {
+            break;
+          }
+        }
+      }
+
+      if (nextPlayerNames.length >= playersNeeded) {
+        // Get skill levels of next players
+        const nextPlayerSkills = nextPlayerNames.map((name) => {
+          const player = registeredPlayers[name];
+          return player ? player.skillLevel : 'intermediate';
+        });
+
+        // Check if all players have the same skill level
+        const firstSkill = nextPlayerSkills[0];
+        const allSameSkill = nextPlayerSkills.every((skill) => skill === firstSkill);
+
+        // Find a matching court
+        let matchingCourt = null;
+
+        if (allSameSkill) {
+          // Try to find a court assigned to this skill level
+          matchingCourt = availableCourts.find((c) => c.assignedSkillLevel === firstSkill);
+        }
+
+        // If no skill-specific court found, try courts with no assignment
+        if (!matchingCourt) {
+          matchingCourt = availableCourts.find((c) => !c.assignedSkillLevel);
+        }
+
+        if (matchingCourt) {
+          startGame(matchingCourt.id);
+          toast.success(`Game started on Court ${matchingCourt.id}`);
+          return;
+        } else {
+          // No matching court available
+          if (allSameSkill) {
+            toast.error(`No courts available for ${firstSkill} players. Available courts have different skill requirements.`);
+          } else {
+            toast.error('No courts available for mixed skill levels. Try using courts without skill assignments.');
+          }
+          return;
+        }
+      }
+    }
+
+    // Default behavior: use first available court (no skill assignment logic)
+    const availableCourt = availableCourts[0];
     startGame(availableCourt.id);
     toast.success(`Game started on Court ${availableCourt.id}`);
   };
