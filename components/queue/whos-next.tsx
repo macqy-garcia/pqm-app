@@ -1,9 +1,13 @@
 'use client';
 
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { useStore } from '@/lib/store';
 import { PLAYERS_PER_GAME } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { Volume2 } from 'lucide-react';
+import { useVoiceAnnouncements } from '@/lib/use-voice-announcements';
+import { toast } from 'sonner';
 
 // Match the color scheme from queue-list
 const NEXT_GAME_COLOR = {
@@ -14,8 +18,9 @@ const NEXT_GAME_COLOR = {
 };
 
 export function WhosNext() {
-  const { queue, settings } = useStore();
+  const { queue, settings, courts, isCourtAvailable, registeredPlayers } = useStore();
   const playersNeeded = PLAYERS_PER_GAME[settings.gameMode];
+  const { announceNextPlayers, isSupported } = useVoiceAnnouncements();
 
   const getNextPlayers = () => {
     if (queue.length === 0) return null;
@@ -103,11 +108,98 @@ export function WhosNext() {
 
   const nextPlayers = getNextPlayers();
 
+  // Determine which court would be used (replicating logic from handleStartNextGame)
+  const getTargetCourt = () => {
+    if (!nextPlayers) return null;
+
+    const availableCourts = courts.filter((c) => !c.active && isCourtAvailable(c.id));
+    if (availableCourts.length === 0) return null;
+
+    // Get all player names from next players
+    let allPlayerNames: string[] = [];
+    if (nextPlayers.type === 'group') {
+      allPlayerNames = nextPlayers.data.players;
+    } else if (nextPlayers.type === 'partial-group') {
+      allPlayerNames = nextPlayers.allPlayers;
+    } else if (nextPlayers.type === 'mixed') {
+      allPlayerNames = nextPlayers.allPlayers;
+    } else {
+      allPlayerNames = nextPlayers.data;
+    }
+
+    // If court skill assignment is enabled, find matching court
+    if (settings.enableCourtSkillAssignment) {
+      const nextPlayerSkills = allPlayerNames.map((name) => {
+        const player = registeredPlayers[name];
+        return player ? player.skillLevel : 'intermediate';
+      });
+
+      const firstSkill = nextPlayerSkills[0];
+      const allSameSkill = nextPlayerSkills.every((skill) => skill === firstSkill);
+
+      let matchingCourt = null;
+      if (allSameSkill) {
+        matchingCourt = availableCourts.find((c) => c.assignedSkillLevel === firstSkill);
+      }
+
+      if (!matchingCourt) {
+        matchingCourt = availableCourts.find((c) => !c.assignedSkillLevel);
+      }
+
+      return matchingCourt || availableCourts[0];
+    }
+
+    return availableCourts[0];
+  };
+
+  const handleAnnounce = () => {
+    if (!nextPlayers) {
+      toast.error('No players to announce');
+      return;
+    }
+
+    const targetCourt = getTargetCourt();
+    if (!targetCourt) {
+      toast.error('No courts available');
+      return;
+    }
+
+    // Get all player names
+    let playerNames: string[] = [];
+    if (nextPlayers.type === 'group') {
+      playerNames = nextPlayers.data.players;
+    } else if (nextPlayers.type === 'partial-group') {
+      playerNames = nextPlayers.allPlayers;
+    } else if (nextPlayers.type === 'mixed') {
+      playerNames = nextPlayers.allPlayers;
+    } else {
+      playerNames = nextPlayers.data;
+    }
+
+    announceNextPlayers(playerNames, targetCourt.id);
+    toast.success('Announcement playing...');
+  };
+
+  const showSpeakerButton = settings.enableVoiceAnnouncements && isSupported && nextPlayers !== null;
+
   return (
     <Card className="p-4 sm:p-5 bg-muted/50">
-      <h3 className="text-xs sm:text-sm font-semibold text-center mb-3 uppercase tracking-wide">
-        👀 Who&apos;s Playing Next
-      </h3>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-xs sm:text-sm font-semibold text-center flex-1 uppercase tracking-wide">
+          👀 Who&apos;s Playing Next
+        </h3>
+        {showSpeakerButton && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleAnnounce}
+            className="h-8 w-8 p-0 flex-shrink-0"
+            title="Announce next players"
+          >
+            <Volume2 className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
 
       <div className="bg-card rounded-lg p-3 sm:p-4 min-h-[60px]">
         {!nextPlayers ? (

@@ -80,7 +80,8 @@ pqm-app/
 │   │   └── statistics-panel.tsx
 │   └── modals/            # Modal dialogs
 │       ├── settings-modal.tsx
-│       └── qr-code-modal.tsx
+│       ├── qr-code-modal.tsx
+│       └── bulk-add-players-modal.tsx  # NEW
 ├── lib/
 │   ├── store.ts           # Zustand store (main state)
 │   ├── types.ts           # TypeScript type definitions
@@ -89,6 +90,7 @@ pqm-app/
 │   ├── wait-time.ts       # Wait time calculations
 │   ├── use-notifications.ts    # Browser notifications hook
 │   ├── use-rental-warnings.ts  # Rental expiration warnings
+│   ├── use-voice-announcements.ts  # Voice TTS hook (NEW)
 │   └── use-media-query.ts      # Responsive utilities
 └── package.json
 ```
@@ -105,6 +107,7 @@ Courts are the playing spaces where games happen. Each court has:
 - **Timer** - Tracks game duration with play/pause/reset
 - **Scores** - Team 1 and Team 2 scores (optional)
 - **Group Info** - If players came from a group, maintains group identity
+- **Skill Assignment** - Optional restriction to specific skill level (NEW)
 
 ### 2. Queue System
 The queue is a **linear, ordered list** of players/groups waiting to play:
@@ -122,7 +125,7 @@ Players are **registered users** tracked throughout sessions:
 
 ### 4. Groups
 Groups are **permanent teams** of players:
-- **Size** - Must match game mode (2 for singles, 4 for doubles)
+- **Size** - Flexible 2-4 players (can combine with individuals if needed)
 - **Queue as Unit** - Entire group queued together
 - **Identity Preservation** - Group maintained when playing and returning to queue
 - **Exclusivity** - Players can't be in multiple groups
@@ -176,6 +179,7 @@ interface AppState {
 - `endGame(courtId)` - End game, update stats, handle rotation
 - `addPlayerToCourt(courtId, playerName)` - Manually add player to court
 - `updateCourtScore(courtId, team, score)` - Update team scores
+- `assignCourtSkillLevel(courtId, skillLevel)` - Assign/remove skill restriction (NEW)
 
 **Queue Actions:**
 - `addPlayerToQueue(name)` - Add individual player
@@ -397,11 +401,103 @@ interface AppState {
 - Auto-start timer
 - Browser notifications
 - Skill-based matching
+- Auto-balance teams by skill (NEW)
+- Strict skill level matching (NEW)
+- Enable court skill assignments (NEW)
+- Enable voice announcements (NEW)
 - Show court timers
 - Manual scoring
 
+**Voice Settings (NEW):**
+- Voice type selection (Male/Female English, Male/Female Filipino)
+
 **Danger Zone:**
 - Clear all data (with confirmation)
+
+### 10. Court Skill Assignment (NEW)
+
+#### Overview
+**Location:** `components/courts/court-card.tsx`, `lib/store.ts`, `app/page.tsx`
+
+Allows assigning specific skill levels to courts for skill-based court restrictions.
+
+#### Features
+- **Assign Skill to Court** - Restrict court to beginner, intermediate, advanced, or professional players
+- **Optional Assignment** - Courts without assignment accept any skill level
+- **Intelligent Matching** - Game start logic automatically selects appropriate court based on player skills
+- **Visual Indicators** - Court cards show assigned skill level badge
+
+#### How It Works
+1. Enable "Enable court skill assignments" in Settings
+2. On empty court card, use dropdown to assign skill level
+3. When starting games, system checks next players' skill levels
+4. Matches players to courts with same skill assignment
+5. Falls back to courts without assignment if no exact match
+6. Shows error if no compatible court available
+
+#### Logic Priority
+```
+1. Find court assigned to player's skill level
+2. Fall back to unassigned courts
+3. Error if no match found
+```
+
+### 11. Bulk Player Onboarding (NEW)
+
+#### Overview
+**Location:** `components/modals/bulk-add-players-modal.tsx`, `components/players/player-list.tsx`
+
+Allows batch registration of multiple players from external systems.
+
+#### Features
+- **Paste Multiple Names** - One name per line in textarea
+- **Bulk Registration** - All players registered at once
+- **Not Auto-queued** - Players registered but NOT added to queue
+- **Duplicate Detection** - Skips players already registered
+- **Default Skill** - All bulk-added players default to Intermediate
+
+#### How to Use
+1. Go to Players tab
+2. Click "Bulk Add" button
+3. Paste player names (one per line)
+4. Click "Add Players"
+5. Players appear in registered players list
+6. Manually add to queue as needed
+
+#### Use Case
+Useful when players check in via external apps (e.g., reclub) and need to be imported quickly.
+
+### 12. Voice Announcements (NEW)
+
+#### Overview
+**Location:** `lib/use-voice-announcements.ts`, `components/queue/whos-next.tsx`
+
+Text-to-speech announcements for next players using Web Speech API.
+
+#### Features
+- **Speaker Button** - Volume icon (🔊) in "Who's Playing Next" section
+- **Voice Selection** - Choose from Male/Female (English) or Male/Female (Filipino)
+- **Intelligent Court Detection** - Announces correct court based on skill assignments
+- **Device-dependent Voices** - Uses browser/OS available voices
+
+#### How It Works
+1. Enable "Enable voice announcements" in Settings
+2. Select voice type (Male/Female/Filipino-Male/Filipino-Female)
+3. When players are ready, click speaker button in "Who's Next"
+4. System announces: "Player1, Player2, Player3, and Player4, please proceed to court X"
+
+#### Voice Selection Logic
+```typescript
+Filipino voices: Checks for 'fil' or 'tl' language code
+English voices: Checks for 'en' language code + gender keywords
+Fallback: Any available voice
+```
+
+#### Browser Support
+- Chrome/Edge: Full support with multiple voices
+- Safari: Limited voice selection
+- Firefox: Varies by OS
+- Voice availability depends on device OS and language packs installed
 
 ---
 
@@ -520,6 +616,14 @@ interface AppState {
 - Instructions text
 - URL display
 
+#### `components/modals/bulk-add-players-modal.tsx` (NEW)
+**Props:** `open`, `onOpenChange`
+- Textarea for pasting player names
+- One name per line format
+- Bulk registration without queue addition
+- Duplicate detection and feedback
+- Count of added vs skipped players
+
 ---
 
 ## Key Files Reference
@@ -532,6 +636,7 @@ interface AppState {
 type SkillLevel = 'beginner' | 'intermediate' | 'advanced' | 'professional'
 type GameMode = 'doubles' | 'singles'
 type RotationRule = 'manual' | 'losersRotate' | 'allRotate'
+type VoiceType = 'male' | 'female' | 'filipino-male' | 'filipino-female' // NEW
 
 interface Player {
   gamesPlayed: number
@@ -549,6 +654,7 @@ interface Court {
   groupInfo?: { id: number; name: string }
   team1Score: number
   team2Score: number
+  assignedSkillLevel?: SkillLevel  // NEW - optional skill restriction
 }
 
 interface QueuePlayer {
@@ -591,6 +697,11 @@ interface Settings {
   autoTimer: boolean
   enableNotifications: boolean
   skillMatchingEnabled: boolean
+  autoTeamBalancing: boolean  // NEW
+  strictSkillMatching: boolean  // NEW
+  enableCourtSkillAssignment: boolean  // NEW
+  enableVoiceAnnouncements: boolean  // NEW
+  voiceType: VoiceType  // NEW
   showCourtTimers: boolean
   enableManualScoring: boolean
 }
@@ -654,6 +765,30 @@ interface CourtSchedule {
 - Shows toast at 5 minutes remaining
 - Option to extend rental
 - Tracks if warning shown
+
+### `lib/use-voice-announcements.ts` (NEW)
+**Purpose:** Voice announcements using Web Speech API
+
+**Behavior:**
+- Loads available voices from browser/OS
+- Selects voice based on type and language preference
+- `selectVoice(voiceType)` - Finds matching voice with fallback logic
+- `announce(text)` - Speaks text with selected voice
+- `announceNextPlayers(playerNames, courtId)` - Formats and announces next game
+- Checks if speech synthesis is supported
+- Provides voice list for debugging
+
+**Key Functions:**
+- `announce(text: string)` - Generic TTS announcement
+- `announceNextPlayers(playerNames: string[], courtId: number)` - Formatted player announcement
+- `selectVoice(voiceType: VoiceType)` - Voice selection with fallback
+
+**Voice Selection Priority:**
+```
+Filipino: 'fil'/'tl' language code → gender keywords → any Filipino voice
+English: gender keywords → 'en' language code → any English voice
+Fallback: any available voice
+```
 
 ### `lib/utils.ts`
 **Purpose:** Utility functions
@@ -816,13 +951,39 @@ console.log('Full state:', store)
 4. Ensure court is available
 5. Verify notifications appear
 
+### Testing Court Skill Assignment (NEW)
+1. Enable court skill assignments in settings
+2. Set different skills to different players
+3. Assign Court 1 to "beginner" only
+4. Add 4 beginners to queue
+5. Click "Start Next Game"
+6. Verify game starts on Court 1
+7. Test fallback: Add mixed skills, verify uses unassigned court
+
+### Testing Bulk Player Onboarding (NEW)
+1. Go to Players tab
+2. Click "Bulk Add"
+3. Paste multiple names (one per line)
+4. Verify all players registered
+5. Check duplicate detection works
+6. Verify players NOT in queue
+
+### Testing Voice Announcements (NEW)
+1. Enable voice announcements in settings
+2. Select voice type
+3. Add 4 players to queue
+4. Ensure at least one court is available
+5. Click speaker button (🔊) in "Who's Next"
+6. Verify announcement plays
+7. Test different voice types
+8. Test with court skill assignments enabled
+
 ---
 
 ## Future Enhancement Ideas
 
 ### Not Yet Implemented
 - **Losers Rotate** - Actual implementation of losers-only rotation
-- **Team Assignment** - Automatic team balancing for doubles
 - **Player Profiles** - Photos, contact info, preferences
 - **Tournament Mode** - Bracket generation
 - **Check-in System** - Players must check in when notified
@@ -864,6 +1025,21 @@ console.log('Full state:', store)
 - Clear `.next` folder
 - Delete `node_modules` and reinstall
 - Check TypeScript errors: `npx tsc --noEmit`
+
+### Voice Announcements Not Working (NEW)
+- Verify `enableVoiceAnnouncements` setting is enabled
+- Check browser supports Web Speech API (Chrome/Edge recommended)
+- Verify voice type is selected in settings
+- Check device has TTS voices installed (especially for Filipino)
+- Try different voice types to test availability
+- Check browser console for speech synthesis errors
+
+### Court Skill Assignment Issues (NEW)
+- Verify `enableCourtSkillAssignment` setting is enabled
+- Check players have skill levels set (default: intermediate)
+- Verify court has skill level assigned (or set to "none")
+- Check "Start Next Game" logic prioritizes matching courts
+- Ensure fallback to unassigned courts works correctly
 
 ---
 

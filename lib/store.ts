@@ -59,6 +59,8 @@ const defaultSettings: Settings = {
   autoTeamBalancing: false,
   strictSkillMatching: false,
   enableCourtSkillAssignment: false,
+  enableVoiceAnnouncements: false,
+  voiceType: 'female',
 };
 
 export const useStore = create<StoreState>()(

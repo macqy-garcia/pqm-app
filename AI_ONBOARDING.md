@@ -36,9 +36,11 @@ Manages pickleball courts at a facility: tracks player queues, starts/ends games
 8. **`components/modals/settings-modal.tsx`** - All configurable settings
 9. **`lib/use-notifications.ts`** - Browser notification logic
 10. **`lib/use-rental-warnings.ts`** - Court rental expiration warnings
+11. **`lib/use-voice-announcements.ts`** - Text-to-speech voice announcements
 
 ### Supporting Files
 - `components/ui/*` - Reusable Radix UI components (don't modify unless necessary)
+- `components/modals/bulk-add-players-modal.tsx` - Bulk player registration (NEW)
 - Other `components/*` - Feature-specific components
 - `lib/utils.ts` - Helper functions
 
@@ -79,22 +81,39 @@ QueuePlayer = { type: 'player', name: string, joinedAt: number }
 QueueGroup = { type: 'group', id: number, name: string, players: string[], joinedAt: number }
 ```
 
-**Critical Rule:** Groups must have exactly the right number of players for game mode (2 for singles, 4 for doubles)
+**Critical Rule:** Groups can now be 2-4 players (flexible group sizes)
+
+### 1a. Voice Types (NEW)
+```typescript
+type VoiceType = 'male' | 'female' | 'filipino-male' | 'filipino-female'
+```
+
+Voice announcements support multiple voice types with language/gender preferences.
 
 ### 2. Court States
 - **Empty + Available**: Can start game from queue
 - **Empty + Scheduled**: Private rental, blocked from queue
+- **Empty + Skill Assigned**: Restricted to specific skill level (if enabled)
 - **Active**: Game in progress
 
-### 3. Starting a Game Logic (store.ts:101-153)
+**Court Skill Assignment (NEW):**
+Courts can have an optional `assignedSkillLevel` that restricts which players can play on that court.
+
+### 3. Starting a Game Logic (store.ts:101-153, app/page.tsx:65-147)
 ```typescript
 // Priority check order:
 1. Is court available (not scheduled)?
 2. Enough players in queue?
-3. Is first item a group?
-   YES → Take entire group (must be correct size)
+3. If court skill assignment enabled:
+   a. Determine skill levels of next players
+   b. Find court matching their skill level
+   c. Fallback to court without skill assignment
+   d. Error if no matching court available
+4. Is first item a group?
+   YES → Take entire group (flexible size 2-4)
    NO → Take N individual players from front
-4. Set court active, start timer, remove from queue
+5. Set court active, start timer, remove from queue
+6. Announce via voice if enabled
 ```
 
 ### 4. Ending a Game Logic (store.ts:155-226)
@@ -446,6 +465,43 @@ const store = useStore()
 
 ---
 
+## 🆕 Recently Added Features
+
+### Court Skill Assignment
+**Location:** `components/courts/court-card.tsx`, `lib/store.ts:637-648`
+- Assign specific skill levels to individual courts (e.g., Court 1-2 for beginners, Court 3 for advanced)
+- Courts can be restricted to players of matching skill level
+- Intelligent court selection when starting games based on player skills
+- Optional feature - can be toggled on/off in settings
+- Courts without assignment accept any skill level
+
+### Bulk Player Onboarding
+**Location:** `components/modals/bulk-add-players-modal.tsx`
+- Paste multiple player names (one per line) to register in bulk
+- Players registered but NOT added to queue automatically
+- Default skill level: Intermediate
+- Useful for importing from external systems (e.g., reclub app)
+- Accessible via "Bulk Add" button in Players tab
+
+### Voice Announcements
+**Location:** `lib/use-voice-announcements.ts`, `components/queue/whos-next.tsx`
+- Text-to-speech announcements for next players
+- Speaker button (🔊) in "Who's Playing Next" section
+- Announces: "Player1, Player2, Player3, and Player4, please proceed to court X"
+- Voice options: Male/Female (English), Male/Female (Filipino)
+- Uses Web Speech API - voice availability depends on device/OS
+- Intelligently determines which court players should go to based on skill assignments
+
+### Enhanced Settings
+**New toggles in settings modal:**
+- `autoTeamBalancing` - Automatically balance teams by skill when starting games
+- `strictSkillMatching` - Only allow games with same skill level players
+- `enableCourtSkillAssignment` - Enable court skill level restrictions
+- `enableVoiceAnnouncements` - Enable text-to-speech announcements
+- `voiceType` - Select voice type (male/female/filipino-male/filipino-female)
+
+---
+
 **Quick Wins for Improvements:**
 - Implement actual "Losers Rotate" logic (store.ts:186)
 - Add player search/filter in player list
@@ -454,7 +510,7 @@ const store = useStore()
 - Add keyboard shortcuts
 - Add undo/redo functionality
 - Add court swap functionality
-- Add batch player import
+- Add team assignment UI for scoring
 
 **Ready to Code!** 🚀
 

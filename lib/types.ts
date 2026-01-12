@@ -55,6 +55,8 @@ export interface GameRecord {
   team2Score?: number;
 }
 
+export type VoiceType = 'male' | 'female' | 'filipino-male' | 'filipino-female';
+
 export interface Settings {
   numCourts: number;
   gameMode: GameMode;
@@ -68,6 +70,8 @@ export interface Settings {
   autoTeamBalancing: boolean; // Automatically balance teams by skill when starting games
   strictSkillMatching: boolean; // Only allow games with players of the same skill level
   enableCourtSkillAssignment: boolean; // Allow assigning skill levels to specific courts
+  enableVoiceAnnouncements: boolean; // Enable text-to-speech announcements
+  voiceType: VoiceType; // Voice type for announcements
 }
 
 export interface CourtSchedule {

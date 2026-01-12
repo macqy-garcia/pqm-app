@@ -34,7 +34,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { useStore } from '@/lib/store';
 import { toast } from 'sonner';
-import type { GameMode, RotationRule } from '@/lib/types';
+import type { GameMode, RotationRule, VoiceType } from '@/lib/types';
 
 interface SettingsModalProps {
   open: boolean;
@@ -56,6 +56,8 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [autoTeamBalancing, setAutoTeamBalancing] = useState(settings.autoTeamBalancing);
   const [strictSkillMatching, setStrictSkillMatching] = useState(settings.strictSkillMatching);
   const [enableCourtSkillAssignment, setEnableCourtSkillAssignment] = useState(settings.enableCourtSkillAssignment);
+  const [enableVoiceAnnouncements, setEnableVoiceAnnouncements] = useState(settings.enableVoiceAnnouncements);
+  const [voiceType, setVoiceType] = useState<VoiceType>(settings.voiceType);
   const [showCourtTimers, setShowCourtTimers] = useState(settings.showCourtTimers);
   const [enableManualScoring, setEnableManualScoring] = useState(settings.enableManualScoring);
 
@@ -71,6 +73,8 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       setAutoTeamBalancing(settings.autoTeamBalancing);
       setStrictSkillMatching(settings.strictSkillMatching);
       setEnableCourtSkillAssignment(settings.enableCourtSkillAssignment);
+      setEnableVoiceAnnouncements(settings.enableVoiceAnnouncements);
+      setVoiceType(settings.voiceType);
       setShowCourtTimers(settings.showCourtTimers);
       setEnableManualScoring(settings.enableManualScoring);
     }
@@ -101,6 +105,8 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       autoTeamBalancing,
       strictSkillMatching,
       enableCourtSkillAssignment,
+      enableVoiceAnnouncements,
+      voiceType,
       showCourtTimers,
       enableManualScoring,
     });
@@ -273,6 +279,40 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               <p className="text-xs text-muted-foreground">
                 Assign specific skill levels to courts (e.g., Court 1-2 for beginners, Court 3 for advanced). Only players matching the court's skill level can play on that court.
               </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="enableVoiceAnnouncements" className="flex-1 cursor-pointer">
+                  Enable voice announcements
+                </Label>
+                <Switch
+                  id="enableVoiceAnnouncements"
+                  checked={enableVoiceAnnouncements}
+                  onCheckedChange={setEnableVoiceAnnouncements}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Announce player names and court assignments via text-to-speech
+              </p>
+
+              {/* Voice Type Selection */}
+              {enableVoiceAnnouncements && (
+                <div className="pl-4 pt-2 space-y-2">
+                  <Label htmlFor="voiceType" className="text-xs">Voice Type</Label>
+                  <Select value={voiceType} onValueChange={(value) => setVoiceType(value as VoiceType)}>
+                    <SelectTrigger id="voiceType" className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="female">Female Voice (English)</SelectItem>
+                      <SelectItem value="male">Male Voice (English)</SelectItem>
+                      <SelectItem value="filipino-female">Female Voice (Filipino)</SelectItem>
+                      <SelectItem value="filipino-male">Male Voice (Filipino)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-between">
